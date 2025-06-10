@@ -29,7 +29,11 @@ export const register = async (req, res) => {
         })
     }
     catch (error) {
-        console.log(`Error`, error)
+        console.error("Error in Register API:", error);
+        return res.status(500).json({
+            message: "Something went wrong",
+            success: false
+        });
     }
 }
 
@@ -76,7 +80,7 @@ export const login = async (req, res) => {
             profile: user.profile
         }
         return res.status(200).cookie("token", token, { maxAge: 1 * 24 * 60 * 60 * 1000, httpsOnly: true, sameSite: 'strict' }).json({
-            message: `Welcome back ${user.fullname}`,
+            message: `Welcome back ${user.fullName}`,
             success: true
         })
     }
@@ -101,18 +105,13 @@ export const updateProfile = async (req, res) => {
     try {
         const { fullName, email, phoneNumber, bio, skills } = req.body;
         const file = req.file;
-
-        if (!fullName || !email || !phoneNumber || !bio || !skills) {
-            return res.status(400).json({
-                message: "Something is missing",
-                success: false
-            });
-        };
-
-        const skillsArray = skills.split(",");
+        let skillsArray
+        if (skills) {
+            const skillsArray = skills.split(",");
+        }
         const userId = req.id //middleware authentication
-        const user = await User.findById(userId);
-        if (!userId) {
+        let user = await User.findById(userId);
+        if (!user) {
             return res.status(400).json({
                 message: "User not found",
                 success: false
@@ -120,11 +119,18 @@ export const updateProfile = async (req, res) => {
         }
 
         //Updating data
-        user.fullName = fullName,
-            user.email = email,
-            user.phoneNumber = phoneNumber,
-            user.bio = bio,
-            user.skills = skillsArray
+
+        if (fullName) user.fullName = fullName;
+        if (email) user.email = email;
+        if (phoneNumber) user.phoneNumber = phoneNumber;
+        if (bio) user.profile.bio = bio;
+        if (skills) user.profile.skills = skillsArray
+
+        // user.fullName = fullName,
+        //     user.email = email,
+        //     user.phoneNumber = phoneNumber,
+        //     user.bio = bio,
+        //     user.skills = skillsArray
 
         await user.save();
 
@@ -135,11 +141,11 @@ export const updateProfile = async (req, res) => {
             phoneNumber: user.phoneNumber,
             role: user.role,
             profile: user.profile
-        } 
+        }
 
         return res.status(200).json({
-            message : "Profile Updated Successfully", user,
-            success :true
+            message: "Profile Updated Successfully", user,
+            success: true
         })
     }
     catch (error) {
